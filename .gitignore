@@ -1,0 +1,19 @@
+# Executables
+server
+client
+sh13
+ex1
+whatsapp
+run
+
+# Object files and dependencies
+*.o
+*.d
+
+# Build directories
+bin/
+build/
+
+# OS generated files
+.DS_Store
+Thumbs.db
