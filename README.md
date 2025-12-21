@@ -4,8 +4,6 @@ Ce dépôt contient l'implémentation du jeu de société **Sherlock 13** en C u
 
 ## Structure du projet
 
-Le projet est divisé en plusieurs dossiers, le code principal du jeu se trouve dans `Sherlock_13/`.
-
 - **server.c** : Le serveur de jeu qui gère la logique, la distribution des cartes et la synchronisation entre les joueurs.
 - **sh13.c** : Le client de jeu (interface graphique SDL) que chaque joueur lance.
 
@@ -37,7 +35,12 @@ Le jeu nécessite 1 serveur et 4 clients (joueurs).
    ./server 32000
    ```
 
-2. **Lancer les 4 joueurs** (dans 4 terminaux différents) :
+2. **Lancer les 4 joueurs**
+
+### Jeu en local
+
+Si les 4 terminaux sont sur le même ordinateur :
+
    ```bash
    ./sh13 localhost 32000 localhost 32001 Jean
    ./sh13 localhost 32000 localhost 32002 Pierre - Louis
@@ -45,4 +48,10 @@ Le jeu nécessite 1 serveur et 4 clients (joueurs).
    ./sh13 localhost 32000 localhost 32004 Emile
    ```
 
-*Note : Remplacez `localhost` par l'adresse IP du serveur si vous jouez sur des machines différentes.*
+### Jeu en réseau
+
+Si les joueurs sont sur des machines différentes, utilisez la syntaxe suivante :
+
+   ```bash
+   ./sh13 <Main server ip address> <Main server port> <Client ip address> <Client port> <player name>
+   ```

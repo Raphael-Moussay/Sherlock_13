@@ -168,7 +168,7 @@ void sendMessageToServer(char *ipAddress, int portno, char *mess)
     int sockfd, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
-    char sendbuffer[256];
+    char sendbuffer[1024];
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -190,7 +190,7 @@ void sendMessageToServer(char *ipAddress, int portno, char *mess)
 		exit(1);
 	}
 
-	sprintf(sendbuffer,"%s\n",mess);
+	snprintf(sendbuffer, sizeof(sendbuffer), "%s\n", mess);
 	n = write(sockfd,sendbuffer,strlen(sendbuffer));
 
     close(sockfd);
@@ -201,11 +201,12 @@ int main(int argc, char ** argv)
 	int ret;
 	int i,j;
 	int joueurElimine[4]={0,0,0,0};
+	int joueur_courant;
 
     int quit = 0;
     SDL_Event event;
 	int mx,my;
-	char sendBuffer[256];
+	char sendBuffer[1024];
 	char lname[256];
 	int id;
 
@@ -229,7 +230,7 @@ int main(int argc, char ** argv)
  
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);  // creer un renderer SDL
 
-    SDL_Surface *deck[13],*objet[8],*gobutton,*connectbutton; /*declaration des surfaces SDL_Surface 
+    SDL_Surface *deck[13],*objet[8],*gobutton,*connectbutton,*logo_su,*logo_ps; /*declaration des surfaces SDL_Surface 
 	afin de stocker les images, c'est comme si un tableau stockait des images*/
 
 	deck[0] = IMG_Load("SH13_0.png"); // load toute les images dans des surfaces SDL_Surface
@@ -257,6 +258,8 @@ int main(int argc, char ** argv)
 
 	gobutton = IMG_Load("gobutton.png"); // load des boutons
 	connectbutton = IMG_Load("connectbutton.png"); // load des boutons
+	logo_su = IMG_Load("logo_su.png"); // load logo su
+	logo_ps = IMG_Load("logo_ps.png"); // load logo ps
 
 	strcpy(gNames[0],"-"); // initialise les noms des joueurs a "-"
 	strcpy(gNames[1],"-");
@@ -285,7 +288,7 @@ int main(int argc, char ** argv)
 	goEnabled=0; // le bouton go n'est pas actif au debut
 	connectEnabled=1; // le bouton connect est actif au debut
     // transforme les surfaces en textures pour l'affichage
-    SDL_Texture *texture_deck[13],*texture_gobutton,*texture_connectbutton,*texture_objet[8];
+    SDL_Texture *texture_deck[13],*texture_gobutton,*texture_connectbutton,*texture_objet[8],*texture_logo_su,*texture_logo_ps;
 
 	for (i=0;i<13;i++)
 	{
@@ -298,8 +301,11 @@ int main(int argc, char ** argv)
 
     texture_gobutton = SDL_CreateTextureFromSurface(renderer, gobutton); // transforme les surfaces en textures pour l'affichage
     texture_connectbutton = SDL_CreateTextureFromSurface(renderer, connectbutton); // transforme les surfaces en textures pour l'affichage
+	texture_logo_su = SDL_CreateTextureFromSurface(renderer, logo_su); // transforme les surfaces en textures pour l'affichage
+	texture_logo_ps = SDL_CreateTextureFromSurface(renderer, logo_ps); // transforme les surfaces en textures pour l'affichage
 	// Chargement de la police de caractères
     TTF_Font* Sans = TTF_OpenFont("sans.ttf", 15); 
+    TTF_Font* SansBig = TTF_OpenFont("sans.ttf", 30); 
     printf("Sans=%p\n",Sans); // ecrit l'adresse de la police dans le terminal
 
 	/* Creation du thread serveur tcp. */
@@ -325,7 +331,7 @@ int main(int argc, char ** argv)
 					//printf("mx=%d my=%d\n",mx,my);
 					if ((mx<200) && (my<50) && (connectEnabled==1))
 					{
-						sprintf(sendBuffer,"C %s %d %s",gClientIpAddress,gClientPort,gName);
+						snprintf(sendBuffer, sizeof(sendBuffer), "C %s %d %s", gClientIpAddress, gClientPort, gName);
 
 						// RAJOUTER DU CODE ICI
 						sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
@@ -422,6 +428,7 @@ int main(int argc, char ** argv)
 				case 'M':
 					// RAJOUTER DU CODE ICI
 					printf("Joueur courant: %s\n", gbuffer+2);
+					joueur_courant = atoi(gbuffer+2);
 					if (atoi(gbuffer+2) == gId)
 						goEnabled = 1; // autorise le bouton go
 					else
@@ -445,7 +452,7 @@ int main(int argc, char ** argv)
 					break;
 				case 'E': // un joueur est éliminé
 					sscanf(gbuffer + 2,"%d", &id);
-					sprintf(sendBuffer, "Le joueur %s est éliminé", gNames[id]);
+					snprintf(sendBuffer, sizeof(sendBuffer), "Le joueur %s est éliminé", gNames[id]);
 					print_boxed_title(sendBuffer, RED);
 					joueurElimine[id] = 1;
 					for (int i = 0 ; i < 4 ; i ++)
@@ -462,13 +469,13 @@ int main(int argc, char ** argv)
 					break;
 				case 'T': // un joueur a gagné
 					sscanf(gbuffer + 2,"%d", &id);
-					sprintf(sendBuffer, "Le joueur %s a gagné la partie", gNames[id]);
+					snprintf(sendBuffer, sizeof(sendBuffer), "Le joueur %s a gagné la partie", gNames[id]);
 					print_boxed_title(sendBuffer, GREEN);
 					quit = 1;
 					break;
 				case 'F': // la partie est finie car un joueur a quitté la partie
 					sscanf(gbuffer + 2,"%d", &id);
-					sprintf(sendBuffer, "Le joueur %s a quitté la partie. Fin de la partie.", gNames[id]);
+					snprintf(sendBuffer, sizeof(sendBuffer), "Le joueur %s a quitté la partie. Fin de la partie.", gNames[id]);
 					print_boxed_title(sendBuffer, RED);
 					quit = 1;
 					break;
@@ -791,7 +798,7 @@ int main(int argc, char ** argv)
 		// Le bouton go
 		if (goEnabled==1)
 		{
-			SDL_Rect dstrect = { 500, 350, 200, 150 };
+			SDL_Rect dstrect = { 500, 350, 200, 150 }; // {x, y, w, h}
 			SDL_RenderCopy(renderer, texture_gobutton, NULL, &dstrect);
 		}
 		// Le bouton connect
@@ -803,6 +810,57 @@ int main(int argc, char ** argv)
 
 		//SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
 		//SDL_RenderDrawLine(renderer, 0, 0, 200, 200);
+
+		// Affichage des logos
+		int w_tex, h_tex;
+		// On récupère la taille réelle de la texture
+		SDL_QueryTexture(texture_logo_su, NULL, NULL, &w_tex, &h_tex);
+
+		// On définit la largeur voulue
+		int largeur_voulue = 200;
+		// On calcule la hauteur proportionnelle (on multiplie avant de diviser pour garder la précision)
+		int hauteur_auto = (largeur_voulue * h_tex) / w_tex;
+
+		SDL_Rect le_logo_su = { 350, 570, largeur_voulue, hauteur_auto };
+		SDL_RenderCopy(renderer, texture_logo_su, NULL, &le_logo_su);
+		// Même chose pour le logo PS
+		SDL_QueryTexture(texture_logo_ps, NULL, NULL, &w_tex, &h_tex);
+		int hauteur_auto_ps = (largeur_voulue * h_tex) / w_tex;
+		SDL_Rect le_logo_ps = { 350, 600 + hauteur_auto, largeur_voulue, hauteur_auto_ps };
+		SDL_RenderCopy(renderer, texture_logo_ps, NULL, &le_logo_ps);
+
+		//affiche le joueur courant
+		snprintf(sendBuffer, sizeof(sendBuffer), "Le joueur courant est %s", gNames[joueur_courant]);
+
+		SDL_Color colCurrentPlayer = {0, 0, 255}; // Bleu
+		SDL_Surface* surfaceMessage = TTF_RenderText_Solid(SansBig, sendBuffer, colCurrentPlayer);
+		SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+
+		SDL_Rect Message_rect;
+		Message_rect.x = 580;
+		Message_rect.y = 600;
+		Message_rect.w = surfaceMessage->w;
+		Message_rect.h = surfaceMessage->h;
+
+		SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
+		SDL_DestroyTexture(Message);
+		SDL_FreeSurface(surfaceMessage);
+
+		//affiche Qui je suis
+		snprintf(sendBuffer, sizeof(sendBuffer), "Je suis %s", gNames[gId]);
+
+		surfaceMessage = TTF_RenderText_Solid(SansBig, sendBuffer, colCurrentPlayer);
+		Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+
+		Message_rect.x = 580;
+		Message_rect.y = 650;
+		Message_rect.w = surfaceMessage->w;
+		Message_rect.h = surfaceMessage->h;
+
+		SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
+		SDL_DestroyTexture(Message);
+		SDL_FreeSurface(surfaceMessage);
+
 
 		SDL_Color col = {0, 0, 0};
 		for (i=0;i<4;i++)
