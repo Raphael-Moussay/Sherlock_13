@@ -198,7 +198,7 @@ void sendMessageToServer(char *ipAddress, int portno, char *mess)
 
 int main(int argc, char ** argv)
 {
-	int rejouer = 1;
+	int rejouer = 100;
 	int ret;
 	int i,j;
 	SDL_Event event;
@@ -284,13 +284,23 @@ int main(int argc, char ** argv)
 		int joueurElimine[4]={0,0,0,0};
 		int joueur_courant;
 		int vainqueur = -1;
-		rejouer = 0;
 
 		int quit = 0;
 		int mx,my;
 		char sendBuffer[1024];
 		char lname[256];
 		int id;
+
+		if (rejouer == 1)
+		{
+			connectEnabled=0; // le bouton connect est inactif au debut le joueur à cliqué sur rejouer
+			snprintf(sendBuffer, sizeof(sendBuffer), "C %s %d %s", gClientIpAddress, gClientPort, gName);
+			sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
+		} else {
+			connectEnabled=1; // le bouton connect est actif au debut
+		}
+		goEnabled=0; // le bouton go n'est pas actif au debut
+		rejouer = 0;
 
 
 		strcpy(gNames[0],"-"); // initialise les noms des joueurs a "-"
@@ -317,8 +327,7 @@ int main(int argc, char ** argv)
 				tableCartes[i][j]=-1; 
 			}
 		}
-		goEnabled=0; // le bouton go n'est pas actif au debut
-		connectEnabled=1; // le bouton connect est actif au debut
+		
 
 		while (!quit) // boucle principale SDL 
 		{
@@ -475,7 +484,8 @@ int main(int argc, char ** argv)
 							{
 								sprintf(sendBuffer, "Tous les joueurs sont éliminés. Fin de la partie.");
 								print_boxed_title(sendBuffer, RED);
-								quit = 1;
+								vainqueur = 100; // indique que tout le monde est éliminé
+
 							}
 						}			
 						break;
@@ -860,9 +870,19 @@ int main(int argc, char ** argv)
 				SDL_DestroyTexture(Message);
 				SDL_FreeSurface(surfaceMessage);
 				//affiche Qui je suis
-				snprintf(sendBuffer, sizeof(sendBuffer), "Je suis %s", gNames[gId]);
+				SDL_Color colPlayer;
+				if (joueurElimine[gId])
+				{
+					colPlayer = (SDL_Color){255, 0, 0}; // Rouge
+					snprintf(sendBuffer, sizeof(sendBuffer), "Je suis elimine");
+				}
+				else
+				{
+					colPlayer = (SDL_Color){0, 0, 255}; // Bleu
+					snprintf(sendBuffer, sizeof(sendBuffer), "Je suis %s", gNames[gId]);
+				}
 
-				surfaceMessage = TTF_RenderText_Solid(SansBig, sendBuffer, colCurrentPlayer);
+				surfaceMessage = TTF_RenderText_Solid(SansBig, sendBuffer, colPlayer);
 				Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 
 				Message_rect.x = 580;
@@ -875,10 +895,20 @@ int main(int argc, char ** argv)
 				SDL_FreeSurface(surfaceMessage);
 			} else 
 			{
-				//affiche le vainqueur
-				snprintf(sendBuffer, sizeof(sendBuffer), "Le vainqueur est %s", gNames[vainqueur]);
+				SDL_Color colWinner;
+				if (vainqueur == 100)
+				{
+					//affiche que tout le monde est éliminé
+					snprintf(sendBuffer, sizeof(sendBuffer), "Tous les joueurs sont elimines !");
+					colWinner = (SDL_Color){255, 0, 0}; // rouge
+				}
+				else
+				{
+					//affiche le gagnant
+					snprintf(sendBuffer, sizeof(sendBuffer), "Le gagnant est %s", gNames[vainqueur]);
+					colWinner = (SDL_Color){0, 128, 0}; // Vert
+				}
 
-				SDL_Color colWinner = {0, 128, 0}; // Vert
 				SDL_Surface* surfaceMessage = TTF_RenderText_Solid(SansBig, sendBuffer, colWinner);
 				SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 

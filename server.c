@@ -317,6 +317,11 @@ int main(int argc, char *argv[]) // serveur de jeu
 		sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		if (sockfd < 0) 
 		error("ERROR opening socket");
+
+		int opt = 1;
+		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) // permets de réutiliser l'adresse du socket immédiatement après la fermeture
+			error("ERROR setsockopt");
+
 		bzero((char *) &serv_addr, sizeof(serv_addr));
 		portno = atoi(argv[1]);
 		serv_addr.sin_family = AF_INET;
